@@ -1,11 +1,18 @@
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// ======================================
+// ARCHIVOS ESTÁTICOS (Frontend)
+// ======================================
+// Permite que Express sirva tus archivos HTML, CSS y JS que están en la raíz del proyecto
+app.use(express.static(path.join(__dirname)));
 
 // ======================================
 // CONEXIÓN CON MYSQL (Soporte local y Render)
@@ -25,6 +32,14 @@ db.connect((error) => {
         return;
     }
     console.log("MySQL conectado correctamente");
+});
+
+// ======================================
+// RUTA PRINCIPAL (Evita el "Cannot GET /")
+// ======================================
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // ======================================
