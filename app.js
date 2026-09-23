@@ -1,3 +1,4 @@
+require('dotenv').config(); // 👈 ¡ESTO ES VITAL PARA QUE LEA TU ARCHIVO .ENV!
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
@@ -27,26 +28,25 @@ const conexion = mysql.createConnection({
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_NAME || "basedb",
     port: process.env.DB_PORT || 3306,
-    ssl: process.env.DB_HOST && process.env.DB_HOST.includes("aivencloud.com") ? { rejectUnauthorized: false } : false
+    ssl: { 
+        rejectUnauthorized: false // Forzamos SSL relajado para Aiven tanto en local como en la nube
+    }
 });
 
 
 conexion.connect(function (error) {
 
     if (error) {
-
-        console.error(
-            "❌ Error conectando con MySQL:",
-            error.message
-        );
-
+        console.error("❌ Error detallado conectando con MySQL:", {
+            mensaje: error.message,
+            codigo: error.code,
+            errno: error.errno,
+            sqlState: error.sqlState
+        });
         return;
-
     }
 
-    console.log(
-        "✅ Conectado correctamente a MySQL"
-    );
+    console.log("✅ Conectado correctamente a MySQL");
 
 });
 
@@ -70,19 +70,15 @@ app.get("/", function (req, res) {
 
 app.post("/login", function (req, res) {
 
-    const usuario =
-        req.body.usuario;
-
-    const password =
-        req.body.password;
+    const usuario = req.body.usuario;
+    const password = req.body.password;
 
 
     if (!usuario || !password) {
 
         return res.status(400).json({
 
-            mensaje:
-                "Completa usuario y contraseña."
+            mensaje: "Completa usuario y contraseña."
 
         });
 
@@ -142,8 +138,7 @@ app.post("/login", function (req, res) {
 
                 return res.status(500).json({
 
-                    mensaje:
-                        "Error en la base de datos."
+                    mensaje: "Error en la base de datos."
 
                 });
 
@@ -154,25 +149,20 @@ app.post("/login", function (req, res) {
 
                 return res.status(401).json({
 
-                    mensaje:
-                        "Usuario o contraseña incorrectos."
+                    mensaje: "Usuario o contraseña incorrectos."
 
                 });
 
             }
 
 
-            const usuarioEncontrado =
-                resultados[0];
+            const usuarioEncontrado = resultados[0];
 
 
             res.json({
 
-                mensaje:
-                    "Inicio de sesión correcto.",
-
-                usuario:
-                    usuarioEncontrado
+                mensaje: "Inicio de sesión correcto.",
+                usuario: usuarioEncontrado
 
             });
 
@@ -191,8 +181,7 @@ app.get(
     "/usuario/:identificacion",
     function (req, res) {
 
-        const identificacion =
-            req.params.identificacion;
+        const identificacion = req.params.identificacion;
 
 
         const sql = `
@@ -236,8 +225,7 @@ app.get(
 
                     return res.status(500).json({
 
-                        mensaje:
-                            "Error consultando la base de datos."
+                        mensaje: "Error consultando la base de datos."
 
                     });
 
@@ -248,8 +236,7 @@ app.get(
 
                     return res.status(404).json({
 
-                        mensaje:
-                            "Usuario no encontrado."
+                        mensaje: "Usuario no encontrado."
 
                     });
 
@@ -270,15 +257,13 @@ app.get(
 
 /* =========================================
    ACTUALIZAR PERFIL
-   EL ICONO SE CAMBIA DESDE PERFIL
 ========================================= */
 
 app.put(
     "/usuario/:identificacion",
     function (req, res) {
 
-        const identificacion =
-            req.params.identificacion;
+        const identificacion = req.params.identificacion;
 
 
         const {
@@ -336,22 +321,18 @@ app.put(
 
                     return res.status(500).json({
 
-                        mensaje:
-                            "No se pudo actualizar el perfil."
+                        mensaje: "No se pudo actualizar el perfil."
 
                     });
 
                 }
 
 
-                if (
-                    resultado.affectedRows === 0
-                ) {
+                if (resultado.affectedRows === 0) {
 
                     return res.status(404).json({
 
-                        mensaje:
-                            "Usuario no encontrado."
+                        mensaje: "Usuario no encontrado."
 
                     });
 
@@ -360,8 +341,7 @@ app.put(
 
                 res.json({
 
-                    mensaje:
-                        "Perfil actualizado correctamente."
+                    mensaje: "Perfil actualizado correctamente."
 
                 });
 
@@ -375,15 +355,13 @@ app.put(
 
 /* =========================================
    GUARDAR CONFIGURACIONES
-   AQUÍ YA NO SE MODIFICA EL ICONO
 ========================================= */
 
 app.put(
     "/configuracion/:identificacion",
     function (req, res) {
 
-        const identificacion =
-            req.params.identificacion;
+        const identificacion = req.params.identificacion;
 
 
         const {
@@ -393,40 +371,10 @@ app.put(
         } = req.body;
 
 
-        /* ---------------------------------
-           VALIDAR TEMA
-        --------------------------------- */
+        const temaFinal = tema === "claro" ? "claro" : "oscuro";
+        const rutina = Number(notificaciones_rutina) === 1 ? 1 : 0;
+        const alimentacion = Number(notificaciones_alimentacion) === 1 ? 1 : 0;
 
-        const temaFinal =
-            tema === "claro"
-                ? "claro"
-                : "oscuro";
-
-
-        /* ---------------------------------
-           VALIDAR NOTIFICACIONES
-        --------------------------------- */
-
-        const rutina =
-            Number(notificaciones_rutina) === 1
-                ? 1
-                : 0;
-
-
-        const alimentacion =
-            Number(notificaciones_alimentacion) === 1
-                ? 1
-                : 0;
-
-
-        /* ---------------------------------
-           ACTUALIZAR SOLAMENTE:
-           - tema
-           - notificaciones_rutina
-           - notificaciones_alimentacion
-
-           NO SE TOCA icono
-        --------------------------------- */
 
         const sql = `
 
@@ -464,22 +412,18 @@ app.put(
 
                     return res.status(500).json({
 
-                        mensaje:
-                            "Error guardando las configuraciones."
+                        mensaje: "Error guardando las configuraciones."
 
                     });
 
                 }
 
 
-                if (
-                    resultado.affectedRows === 0
-                ) {
+                if (resultado.affectedRows === 0) {
 
                     return res.status(404).json({
 
-                        mensaje:
-                            "Usuario no encontrado."
+                        mensaje: "Usuario no encontrado."
 
                     });
 
@@ -488,8 +432,7 @@ app.put(
 
                 res.json({
 
-                    mensaje:
-                        "Configuraciones guardadas correctamente."
+                    mensaje: "Configuraciones guardadas correctamente."
 
                 });
 
@@ -509,43 +452,24 @@ app.put(
     "/configuracion/:identificacion/password",
     function (req, res) {
 
-        const identificacion =
-            req.params.identificacion;
+        const identificacion = req.params.identificacion;
+        const { passwordActual, passwordNueva } = req.body;
 
 
-        const {
-            passwordActual,
-            passwordNueva
-        } = req.body;
-
-
-        /* ---------------------------------
-           VALIDAR DATOS
-        --------------------------------- */
-
-        if (
-            !passwordActual ||
-            !passwordNueva
-        ) {
+        if (!passwordActual || !passwordNueva) {
 
             return res.status(400).json({
 
-                mensaje:
-                    "Debes completar las contraseñas."
+                mensaje: "Debes completar las contraseñas."
 
             });
 
         }
 
 
-        /* ---------------------------------
-           BUSCAR CONTRASEÑA ACTUAL
-        --------------------------------- */
-
         const buscarSql = `
 
-            SELECT
-                password
+            SELECT password
 
             FROM usuarios
 
@@ -573,8 +497,7 @@ app.put(
 
                     return res.status(500).json({
 
-                        mensaje:
-                            "Error consultando la cuenta."
+                        mensaje: "Error consultando la cuenta."
 
                     });
 
@@ -585,47 +508,32 @@ app.put(
 
                     return res.status(404).json({
 
-                        mensaje:
-                            "Usuario no encontrado."
+                        mensaje: "Usuario no encontrado."
 
                     });
 
                 }
 
 
-                const passwordGuardada =
-                    resultados[0].password;
+                const passwordGuardada = resultados[0].password;
 
 
-                /* ---------------------------------
-                   COMPROBAR CONTRASEÑA
-                --------------------------------- */
-
-                if (
-                    String(passwordGuardada) !==
-                    String(passwordActual)
-                ) {
+                if (String(passwordGuardada) !== String(passwordActual)) {
 
                     return res.status(401).json({
 
-                        mensaje:
-                            "La contraseña actual es incorrecta."
+                        mensaje: "La contraseña actual es incorrecta."
 
                     });
 
                 }
 
-
-                /* ---------------------------------
-                   ACTUALIZAR CONTRASEÑA
-                --------------------------------- */
 
                 const actualizarSql = `
 
                     UPDATE usuarios
 
-                    SET
-                        password = ?
+                    SET password = ?
 
                     WHERE identificacion = ?
 
@@ -641,10 +549,7 @@ app.put(
                         identificacion
                     ],
 
-                    function (
-                        errorActualizar,
-                        resultado
-                    ) {
+                    function (errorActualizar, resultado) {
 
                         if (errorActualizar) {
 
@@ -655,22 +560,18 @@ app.put(
 
                             return res.status(500).json({
 
-                                mensaje:
-                                    "No se pudo cambiar la contraseña."
+                                mensaje: "No se pudo cambiar la contraseña."
 
                             });
 
                         }
 
 
-                        if (
-                            resultado.affectedRows === 0
-                        ) {
+                        if (resultado.affectedRows === 0) {
 
                             return res.status(404).json({
 
-                                mensaje:
-                                    "Usuario no encontrado."
+                                mensaje: "Usuario no encontrado."
 
                             });
 
@@ -679,8 +580,7 @@ app.put(
 
                         res.json({
 
-                            mensaje:
-                                "Contraseña cambiada correctamente."
+                            mensaje: "Contraseña cambiada correctamente."
 
                         });
 
