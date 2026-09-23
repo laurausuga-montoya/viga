@@ -4,7 +4,8 @@ const cors = require("cors");
 
 const app = express();
 
-const PORT = 3000;
+// Puerto dinámico para Render (o 3000 por defecto si estás en local)
+const PORT = process.env.PORT || 3000;
 
 
 /* =========================================
@@ -17,19 +18,16 @@ app.use(express.json());
 
 
 /* =========================================
-   CONEXIÓN MYSQL
+   CONEXIÓN MYSQL (Soporte local y Aiven/Render)
 ========================================= */
 
 const conexion = mysql.createConnection({
-
-    host: "localhost",
-
-    user: "root",
-
-    password: "",
-
-    database: "basedb"
-
+    host: process.env.DB_HOST || "localhost",
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "basedb",
+    port: process.env.DB_PORT || 3306,
+    ssl: process.env.DB_HOST && process.env.DB_HOST.includes("aivencloud.com") ? { rejectUnauthorized: false } : false
 });
 
 

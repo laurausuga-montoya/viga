@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // ======================================
-// CONEXIÓN CON MYSQL (Soporte local y Render)
+// CONEXIÓN CON MYSQL (Soporte local y Aiven/Render)
 // ======================================
 
 const db = mysql.createConnection({
@@ -23,7 +23,8 @@ const db = mysql.createConnection({
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_NAME || "basedb",
-    port: process.env.DB_PORT || 3306
+    port: process.env.DB_PORT || 3306,
+    ssl: process.env.DB_HOST && process.env.DB_HOST.includes("aivencloud.com") ? { rejectUnauthorized: false } : false
 });
 
 db.connect((error) => {
